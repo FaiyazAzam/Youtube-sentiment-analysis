@@ -2,7 +2,6 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   const outputDiv = document.getElementById("output");
-  const API_KEY = 'AIzaSyCJzD4UHa7eBlmhO95KFp-E1qJU-yjXzWQ';  // Replace with your actual YouTube Data API key
   // const API_URL = 'http://my-elb-2062136355.us-east-1.elb.amazonaws.com:80';   
   const API_URL = 'http://localhost:5000/';
   // const API_URL = 'http://23.20.221.231:8080/';
@@ -123,30 +122,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // async function fetchComments(videoId) {
+  //   let comments = [];
+  //   let pageToken = "";
+  //   try {
+  //     while (comments.length < 500) {
+  //       const response = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&pageToken=${pageToken}&key=${API_KEY}`);
+  //       const data = await response.json();
+  //       if (data.items) {
+  //         data.items.forEach(item => {
+  //           const commentText = item.snippet.topLevelComment.snippet.textOriginal;
+  //           const timestamp = item.snippet.topLevelComment.snippet.publishedAt;
+  //           const authorId = item.snippet.topLevelComment.snippet.authorChannelId?.value || 'Unknown';
+  //           comments.push({ text: commentText, timestamp: timestamp, authorId: authorId });
+  //         });
+  //       }
+  //       pageToken = data.nextPageToken;
+  //       if (!pageToken) break;
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching comments:", error);
+  //     outputDiv.innerHTML += "<p>Error fetching comments.</p>";
+  //   }
+  //   return comments;
+  // }
   async function fetchComments(videoId) {
-    let comments = [];
-    let pageToken = "";
-    try {
-      while (comments.length < 500) {
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&pageToken=${pageToken}&key=${API_KEY}`);
-        const data = await response.json();
-        if (data.items) {
-          data.items.forEach(item => {
-            const commentText = item.snippet.topLevelComment.snippet.textOriginal;
-            const timestamp = item.snippet.topLevelComment.snippet.publishedAt;
-            const authorId = item.snippet.topLevelComment.snippet.authorChannelId?.value || 'Unknown';
-            comments.push({ text: commentText, timestamp: timestamp, authorId: authorId });
-          });
-        }
-        pageToken = data.nextPageToken;
-        if (!pageToken) break;
-      }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      outputDiv.innerHTML += "<p>Error fetching comments.</p>";
-    }
-    return comments;
+  try {
+    const res = await fetch(`${API_URL}/youtube/comments?videoId=${encodeURIComponent(videoId)}&limit=500`);
+    if (!res.ok) throw new Error("Failed to fetch comments from backend");
+    const comments = await res.json();
+    return Array.isArray(comments) ? comments : [];
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    outputDiv.innerHTML += "<p>Error fetching comments.</p>";
+    return [];
   }
+}
 
   async function getSentimentPredictions(comments) {
     try {

@@ -15,6 +15,15 @@ from nltk.stem import WordNetLemmatizer
 from mlflow.tracking import MlflowClient
 import matplotlib.dates as mdates
 import pickle
+import requests
+from dotenv import load_dotenv
+import os
+
+# Load .env from same folder as main.py
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+
+YOUTUBE_DATA_API_KEY = os.getenv("YOUTUBE_DATA_API_KEY")
+print("Loaded API key:", bool(YOUTUBE_DATA_API_KEY))
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -85,6 +94,52 @@ model, vectorizer = load_model("lgbm_model.pkl", "tfidf_vectorizer.pkl")
 @app.route('/')
 def home():
     return "Welcome to our flask api"
+
+@app.get('/youtube/comments')
+def youtube_comments():
+    """
+    Proxy endpoint: fetch YouTube comments server-side using the API key from .env.
+    Keeps the API key hidden from the extension.
+    Query params:
+      ?videoId=<id>&limit=500
+    """
+    video_id = request.args.get("videoId")
+    limit = int(request.args.get("limit", "500"))
+    limit = min(max(limit, 1), 1000)  # cap at 1000
+
+    if not video_id:
+        return jsonify({"error": "videoId required"}), 400
+
+    comments, page_token = [], ""
+    try:
+        while len(comments) < limit:
+            params = {
+                "part": "snippet",
+                "videoId": video_id,
+                "maxResults": 100,
+                "pageToken": page_token,
+                "key": YOUTUBE_DATA_API_KEY,
+            }
+            r = requests.get("https://www.googleapis.com/youtube/v3/commentThreads", params=params, timeout=15)
+            r.raise_for_status()
+            data = r.json()
+
+            for item in data.get("items", []):
+                s = item["snippet"]["topLevelComment"]["snippet"]
+                comments.append({
+                    "text": s.get("textOriginal") or s.get("textDisplay", ""),
+                    "timestamp": s.get("publishedAt"),
+                    "authorId": (s.get("authorChannelId") or {}).get("value", "Unknown"),
+                })
+
+            page_token = data.get("nextPageToken")
+            if not page_token:
+                break
+    except requests.RequestException as e:
+        app.logger.error(f"/youtube/comments error: {e}")
+        return jsonify({"error": f"Failed to fetch comments: {e}"}), 502
+
+    return jsonify(comments[:limit])
 
 @app.route('/predict_with_timestamps', methods=['POST'])
 def predict_with_timestamps():
