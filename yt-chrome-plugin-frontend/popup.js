@@ -122,30 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // async function fetchComments(videoId) {
-  //   let comments = [];
-  //   let pageToken = "";
-  //   try {
-  //     while (comments.length < 500) {
-  //       const response = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&pageToken=${pageToken}&key=${API_KEY}`);
-  //       const data = await response.json();
-  //       if (data.items) {
-  //         data.items.forEach(item => {
-  //           const commentText = item.snippet.topLevelComment.snippet.textOriginal;
-  //           const timestamp = item.snippet.topLevelComment.snippet.publishedAt;
-  //           const authorId = item.snippet.topLevelComment.snippet.authorChannelId?.value || 'Unknown';
-  //           comments.push({ text: commentText, timestamp: timestamp, authorId: authorId });
-  //         });
-  //       }
-  //       pageToken = data.nextPageToken;
-  //       if (!pageToken) break;
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching comments:", error);
-  //     outputDiv.innerHTML += "<p>Error fetching comments.</p>";
-  //   }
-  //   return comments;
-  // }
+
   async function fetchComments(videoId) {
   try {
     const res = await fetch(`${API_URL}/youtube/comments?videoId=${encodeURIComponent(videoId)}&limit=500`);
