@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const outputDiv = document.getElementById("output");
   // const API_URL = 'http://my-elb-2062136355.us-east-1.elb.amazonaws.com:80';   
   // const API_URL = 'http://localhost:5000/';
-  const API_URL = 'http://100.26.52.3:8080/';
+  const API_URL = 'http://100.26.52.3:5000/';
 
   // Get the current tab's URL
   chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
