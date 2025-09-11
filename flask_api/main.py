@@ -19,9 +19,24 @@ import requests
 from dotenv import load_dotenv
 import os
 
-# Load .env from same folder as main.py
+# ---- dotenv (optional in prod) ---------------------------------------------
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(*args, **kwargs):
+        return False
+
+# Load .env that sits next to this file (for local/dev)
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
+# ---- paths to models: absolute + env-overridable ---------------------------
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))        # /app/flask_api
+REPO_ROOT  = os.path.abspath(os.path.join(BASE_DIR, os.pardir)) # /app
+
+MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(REPO_ROOT, "lgbm_model.pkl"))
+VECTORIZER_PATH = os.getenv("VECTORIZER_PATH", os.path.join(REPO_ROOT, "tfidf_vectorizer.pkl"))
+
+# API key (from env or .env if present)
 YOUTUBE_DATA_API_KEY = os.getenv("YOUTUBE_DATA_API_KEY")
 print("Loaded API key:", bool(YOUTUBE_DATA_API_KEY))
 
@@ -82,11 +97,11 @@ def load_model(model_path, vectorizer_path):
       
         return model, vectorizer
     except Exception as e:
-        raise
+        raise RuntimeError(f"Failed to load model/vectorizer: {e}")
 
 
 # Initialize the model and vectorizer
-model, vectorizer = load_model("lgbm_model.pkl", "tfidf_vectorizer.pkl")  
+model, vectorizer = load_model(MODEL_PATH, VECTORIZER_PATH)  
 
 # Initialize the model and vectorizer
 # model, vectorizer = load_model_and_vectorizer("my_model", "1", "./tfidf_vectorizer.pkl")  # Update paths and versions as needed
